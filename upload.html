@@ -1,0 +1,54 @@
+<!-- Save as upload.html (or anywhere you prefer) -->
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"/><title>Upload & Share</title></head>
+  <body>
+    <h3>Upload file</h3>
+    <form id="uploadForm">
+      <input type="file" name="file" id="file" required /><br/>
+      <label>Password: <input type="text" name="password" id="password" required /></label><br/>
+      <button type="submit">Upload</button>
+    </form>
+
+    <div id="result" style="margin-top:20px; display:none;">
+      <h4>QR</h4>
+      <img id="qrImg" alt="QR code" style="max-width:300px"/><br/>
+      <p>Share page: <a id="shareLink" target="_blank"></a></p>
+      <button id="copyLink">Copy share link</button>
+    </div>
+
+    <script>
+      const form = document.getElementById('uploadForm');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const f = document.getElementById('file').files[0];
+        const pw = document.getElementById('password').value;
+        const fd = new FormData();
+        fd.append('file', f);
+        fd.append('password', pw);
+        const resp = await fetch('http://localhost:3000/upload', { method: 'POST', body: fd });
+        const data = await resp.json();
+        if (data.success) {
+          document.getElementById('qrImg').src = data.qr;
+          const shareUrl = `http://localhost:3000/share/${data.fileId}`;
+          const shareLinkEl = document.getElementById('shareLink');
+          shareLinkEl.href = shareUrl;
+          shareLinkEl.textContent = shareUrl;
+          document.getElementById('result').style.display = 'block';
+        } else {
+          alert('Upload failed');
+        }
+      });
+
+      document.getElementById('copyLink').addEventListener('click', async () => {
+        const link = document.getElementById('shareLink').href;
+        try {
+          await navigator.clipboard.writeText(link);
+          alert('Link copied');
+        } catch {
+          alert('Copy failed');
+        }
+      });
+    </script>
+  </body>
+</html>

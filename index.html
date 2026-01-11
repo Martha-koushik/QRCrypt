@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR File Sharing</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #4caf50;
+      --background-color: #f4f7fc;
+      --card-background: #fff;
+      --text-color: #333;
+      --shadow-color: rgba(0,0,0,0.1);
+    }
+
+    .dark-theme {
+      --primary-color: #66bb6a;
+      --background-color: #1a1a1a;
+      --card-background: #2d2d2d;
+      --text-color: #ffffff;
+      --shadow-color: rgba(0,0,0,0.3);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--background-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      transition: all 0.3s ease;
+      color: var(--text-color);
+    }
+
+    .container {
+      width: 90%;
+      max-width: 600px;
+      margin: 2rem auto;
+    }
+
+    h1 {
+      color: var(--text-color);
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+    }
+
+    #uploadForm {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--card-background);
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px var(--shadow-color);
+      transition: all 0.3s ease;
+    }
+
+    .file-input-container {
+      width: 100%;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .file-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: var(--background-color);
+      border: 2px dashed var(--primary-color);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .file-label:hover {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    button {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: transform 0.2s ease;
+      width: 100%;
+      max-width: 200px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    #qrContainer {
+      margin-top: 2rem;
+      text-align: center;
+      display: none;
+      background: var(--card-background);
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px var(--shadow-color);
+    }
+
+    #qrImage {
+      width: 250px;
+      height: 250px;
+      margin: 1.5rem 0;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px var(--shadow-color);
+    }
+
+    #fileLink {
+      display: none;
+      margin-top: 1rem;
+      text-decoration: none;
+      color: var(--primary-color);
+      font-weight: bold;
+      transition: color 0.3s ease;
+    }
+
+    #loadingText {
+      display: none;
+      margin-top: 1rem;
+      color: var(--text-color);
+      font-style: italic;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--card-background);
+      border: none;
+      padding: 10px;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 10px var(--shadow-color);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #ddd;
+      border-radius: 4px;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .progress {
+      width: 0%;
+      height: 100%;
+      background: var(--primary-color);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        width: 95%;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+    }
+
+    .password-container {
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+
+    .password-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid var(--primary-color);
+      border-radius: 8px;
+      background: var(--background-color);
+      color: var(--text-color);
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .password-input:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: var(--card-background);
+      padding: 2rem;
+      border-radius: 16px;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        width: 95%;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()">
+    <i class="fas fa-moon"></i>
+  </button>
+
+  <div class="container">
+    <h1>QRCrypt - File Sharing with Encryption</h1>
+    
+    <form id="uploadForm">
+      <div class="file-input-container">
+        <label for="fileInput" class="file-label">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <span style="margin-left: 10px;">Choose a file or drag it here</span>
+        </label>
+        <input type="file" id="fileInput" required />
+      </div>
+      <div class="password-container">
+        <input type="password" 
+               id="filePassword" 
+               placeholder="Set download password (optional)"
+               class="password-input">
+      </div>
+      <button type="submit"><i class="fas fa-qrcode"></i> Generate QR Code</button>
+      <div class="progress-bar">
+        <div class="progress"></div>
+      </div>
+    </form>
+
+    <p id="loadingText">
+      <i class="fas fa-spinner fa-spin"></i>
+      Generating QR Code... Please wait.
+    </p>
+
+    <div id="qrContainer">
+      <h3>Your QR Code is Ready!</h3>
+      <img id="qrImage" src="" alt="QR Code" />
+      <br />
+      <a id="fileLink" href="#" target="_blank">
+        <i class="fas fa-download"></i> Download File
+      </a>
+    </div>
+
+    <div id="passwordPrompt" class="modal">
+      <div class="modal-content">
+        <h3>Enter Password to Download</h3>
+        <input type="password" 
+               id="downloadPassword" 
+               placeholder="Enter password"
+               class="password-input">
+        <button onclick="verifyPassword()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      document.body.classList.toggle('dark-theme');
+      const themeIcon = document.querySelector('.theme-toggle i');
+      if (document.body.classList.contains('dark-theme')) {
+        themeIcon.classList.remove('fa-moon');
+        themeIcon.classList.add('fa-sun');
+      } else {
+        themeIcon.classList.remove('fa-sun');
+        themeIcon.classList.add('fa-moon');
+      }
+    }
+
+    const dropZone = document.querySelector('.file-label');
+    
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.background = getComputedStyle(document.documentElement)
+        .getPropertyValue('--primary-color');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.style.background = 'var(--background-color)';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.background = 'var(--background-color)';
+      const files = e.dataTransfer.files;
+      document.getElementById('fileInput').files = files;
+    });
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
